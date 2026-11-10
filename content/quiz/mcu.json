@@ -223,6 +223,24 @@
       "accept": ["analogRead", "analogRead()", "analogread"],
       "analysis": "analogRead(引脚) 读取模拟量，返回 0~1023；analogWrite 是输出。",
       "keywords": ["analogRead"]
+    },
+    {
+      "id": "m26",
+      "type": "single",
+      "stem": "Python 中，print(\"hello\") 执行后会？",
+      "options": ["在屏幕输出 hello", "把 hello 保存到文件", "删除 hello", "报错"],
+      "answer": 0,
+      "analysis": "print() 是输出函数，会把括号里的内容显示到屏幕上。",
+      "keywords": ["Python", "print"]
+    },
+    {
+      "id": "m27",
+      "type": "single",
+      "stem": "Python 中，for i in range(3): 会重复执行几次循环体？",
+      "options": ["3 次", "1 次", "0 次", "无限次"],
+      "answer": 0,
+      "analysis": "range(3) 依次产生 0、1、2 三个数，循环体重复执行 3 次。",
+      "keywords": ["Python", "for", "循环"]
     }
   ]
 }

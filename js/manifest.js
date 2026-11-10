@@ -48,6 +48,24 @@
         color: "#16a34a",
         course: "content/courses/05-数理基础.md",
         quiz: "content/quiz/math.json"
+      },
+      {
+        id: "logic",
+        title: "逻辑与工程思维",
+        icon: "🧩",
+        desc: "逻辑推理、找规律、流程图、工程方案设计",
+        color: "#e11d48",
+        course: "content/courses/06-逻辑与工程思维.md",
+        quiz: "content/quiz/logic.json"
+      },
+      {
+        id: "ai",
+        title: "AI 与科创前沿",
+        icon: "🤖",
+        desc: "人工智能基础、机器学习、科创常识、项目方法论",
+        color: "#0ea5e9",
+        course: "content/courses/07-AI与科创前沿.md",
+        quiz: "content/quiz/ai.json"
       }
     ],
 
