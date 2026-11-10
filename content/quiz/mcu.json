@@ -1,0 +1,228 @@
+{
+  "moduleId": "mcu",
+  "title": "单片机与编程",
+  "questions": [
+    {
+      "id": "m01",
+      "type": "single",
+      "stem": "Arduino UNO 的核心控制器（主控芯片）是？",
+      "options": ["ATmega328P", "ESP32", "树莓派", "Intel i5"],
+      "answer": 0,
+      "analysis": "Arduino UNO R3 基于 ATmega328P 微控制器。",
+      "keywords": ["Arduino", "ATmega328P"]
+    },
+    {
+      "id": "m02",
+      "type": "single",
+      "stem": "Arduino IDE 中，只运行一次、用于初始化的函数是？",
+      "options": ["setup()", "loop()", "main()", "init()"],
+      "answer": 0,
+      "analysis": "setup() 只在上电或复位后执行一次，用于初始化；loop() 反复循环执行。",
+      "keywords": ["setup", "loop"]
+    },
+    {
+      "id": "m03",
+      "type": "single",
+      "stem": "程序三大基本结构不包括？",
+      "options": ["顺序结构", "选择结构", "循环结构", "递归结构"],
+      "answer": 3,
+      "analysis": "程序三大基本结构是顺序、选择（分支）、循环。递归是一种实现技巧，不属于三大基本结构。",
+      "keywords": ["程序结构"]
+    },
+    {
+      "id": "m04",
+      "type": "single",
+      "stem": "机器人指令「直行→左转→直行→右转」按顺序依次执行，体现的是？",
+      "options": ["顺序结构", "选择结构", "循环结构", "中断结构"],
+      "answer": 0,
+      "analysis": "指令从上到下依次执行，没有条件判断和重复，属于顺序结构。",
+      "keywords": ["顺序结构"]
+    },
+    {
+      "id": "m05",
+      "type": "single",
+      "stem": "「如果距障碍物小于 10cm 则停车，否则前进」体现的是？",
+      "options": ["选择结构", "顺序结构", "循环结构", "并行结构"],
+      "answer": 0,
+      "analysis": "根据条件判断执行不同分支，属于选择（分支）结构 if/else。",
+      "keywords": ["选择结构"]
+    },
+    {
+      "id": "m06",
+      "type": "single",
+      "stem": "逻辑运算「与（&&）」的真值规律是？",
+      "options": ["都为真才为真", "有真即为真", "取反", "都为假才为真"],
+      "answer": 0,
+      "analysis": "与运算（&&）两个条件都为真结果才为真；或运算（||）有真即为真。",
+      "keywords": ["逻辑运算", "与"]
+    },
+    {
+      "id": "m07",
+      "type": "single",
+      "stem": "二进制数 1010 转换为十进制是？",
+      "options": ["10", "8", "12", "16"],
+      "answer": 0,
+      "analysis": "1010(二) = 1×2³ + 0×2² + 1×2¹ + 0×2⁰ = 8+0+2+0 = 10。",
+      "keywords": ["二进制", "进制转换"]
+    },
+    {
+      "id": "m08",
+      "type": "single",
+      "stem": "十进制数 13 转换为二进制是？",
+      "options": ["1101", "1011", "1110", "1001"],
+      "answer": 0,
+      "analysis": "13 = 8+4+1 = 2³+2²+2⁰，即 1101。",
+      "keywords": ["进制转换"]
+    },
+    {
+      "id": "m09",
+      "type": "single",
+      "stem": "PWM（脉宽调制）的主要用途是？",
+      "options": ["通过占空比调节平均电压，实现调光/调速", "放大电流", "存储数据", "测量温度"],
+      "answer": 0,
+      "analysis": "PWM 通过改变高低电平的占空比来调节平均电压，常用于 LED 调光、电机调速、舵机角度控制。",
+      "keywords": ["PWM"]
+    },
+    {
+      "id": "m10",
+      "type": "single",
+      "stem": "控制舵机转到指定角度，通常使用哪种信号？",
+      "options": ["PWM 信号", "I²C 总线", "模拟电压", "串口"],
+      "answer": 0,
+      "analysis": "舵机通过 PWM 信号的脉冲宽度来控制旋转角度。",
+      "keywords": ["舵机", "PWM"]
+    },
+    {
+      "id": "m11",
+      "type": "single",
+      "stem": "I²C 总线使用哪两根线进行通信？",
+      "options": ["SDA 和 SCL", "TX 和 RX", "MOSI 和 MISO", "VCC 和 GND"],
+      "answer": 0,
+      "analysis": "I²C 使用 SDA（数据线）和 SCL（时钟线）两根线，可挂接多个设备。",
+      "keywords": ["I2C", "总线"]
+    },
+    {
+      "id": "m12",
+      "type": "single",
+      "stem": "串口通信（UART）中，TX 引脚的作用是？",
+      "options": ["发送数据", "接收数据", "提供电源", "接地"],
+      "answer": 0,
+      "analysis": "TX（Transmit）用于发送数据，RX（Receive）用于接收数据，通信双方波特率需一致。",
+      "keywords": ["串口", "UART", "TX"]
+    },
+    {
+      "id": "m13",
+      "type": "single",
+      "stem": "图形化编程软件 Mixly 通常用于？",
+      "options": ["拖拽积木块编写 Arduino 程序", "设计机械图纸", "3D 打印建模", "制作 PCB"],
+      "answer": 0,
+      "analysis": "Mixly 是国产图形化编程软件，通过拖拽积木块生成 Arduino 程序，适合入门。",
+      "keywords": ["Mixly", "图形化编程"]
+    },
+    {
+      "id": "m14",
+      "type": "single",
+      "stem": "循环语句中，「重复执行固定次数」通常使用？",
+      "options": ["for 循环", "if 判断", "return 返回", "break 跳出"],
+      "answer": 0,
+      "analysis": "for 循环适合已知次数的重复执行；while 适合满足条件时持续执行。",
+      "keywords": ["for", "循环"]
+    },
+    {
+      "id": "m15",
+      "type": "single",
+      "stem": "下列哪种器件属于执行器（输出设备）？",
+      "options": ["直流电机", "超声波传感器", "光敏电阻", "按键"],
+      "answer": 0,
+      "analysis": "电机是把电能转为机械运动的执行器；传感器是输入设备，按键也是输入。",
+      "keywords": ["执行器", "电机"]
+    },
+    {
+      "id": "m16",
+      "type": "judge",
+      "stem": "Arduino 的 loop() 函数只执行一次。",
+      "answer": false,
+      "analysis": "loop() 是反复循环执行的函数，setup() 才只执行一次。",
+      "keywords": ["loop"]
+    },
+    {
+      "id": "m17",
+      "type": "judge",
+      "stem": "中断机制可以让程序在满足条件时暂时打断当前执行，处理完高优先级任务后再返回。",
+      "answer": true,
+      "analysis": "中断（interrupt）就是暂时打断当前流程去处理紧急事件，处理完再返回继续执行。",
+      "keywords": ["中断"]
+    },
+    {
+      "id": "m18",
+      "type": "blank",
+      "stem": "Arduino 程序中，变量 int speed = 100; 中 int 表示 ____ 类型。",
+      "answer": "整型",
+      "accept": ["整型", "整数", "int", "整"],
+      "analysis": "int 表示整型（整数）数据类型。",
+      "keywords": ["变量", "int"]
+    },
+    {
+      "id": "m19",
+      "type": "single",
+      "stem": "Arduino 中 pinMode(13, OUTPUT) 的作用是？",
+      "options": ["把 13 号引脚设为输出模式", "读取 13 号引脚", "给 13 号引脚通电", "延时"],
+      "answer": 0,
+      "analysis": "pinMode 用于设置引脚模式，OUTPUT 表示输出；使用引脚前必须先设置模式。",
+      "keywords": ["pinMode"]
+    },
+    {
+      "id": "m20",
+      "type": "single",
+      "stem": "读取数字输入引脚（如按键）当前是高电平还是低电平，应使用？",
+      "options": ["digitalRead()", "digitalWrite()", "analogRead()", "delay()"],
+      "answer": 0,
+      "analysis": "digitalRead 读取数字引脚电平（HIGH/LOW），用于读按键等数字输入。",
+      "keywords": ["digitalRead"]
+    },
+    {
+      "id": "m21",
+      "type": "single",
+      "stem": "analogRead(A0) 读取模拟输入时，返回值范围是？",
+      "options": ["0 ~ 1023", "0 ~ 255", "0 ~ 5", "0 ~ 1"],
+      "answer": 0,
+      "analysis": "Arduino 的 ADC 是 10 位，把 0~5V 转换为 0~1023 的整数。",
+      "keywords": ["analogRead", "ADC"]
+    },
+    {
+      "id": "m22",
+      "type": "single",
+      "stem": "Arduino 的 analogWrite()（模拟输出）实际是通过什么实现的？",
+      "options": ["PWM 脉宽调制", "直接改变电压", "串口通信", "I²C 总线"],
+      "answer": 0,
+      "analysis": "analogWrite 通过 PWM 改变占空比调节平均电压，实现调光/调速，并非真正连续模拟电压。",
+      "keywords": ["analogWrite", "PWM"]
+    },
+    {
+      "id": "m23",
+      "type": "single",
+      "stem": "单片机要控制 220V 的大功率电器，应使用？",
+      "options": ["继电器", "直接把引脚接电器", "光敏电阻", "蜂鸣器"],
+      "answer": 0,
+      "analysis": "单片机引脚电流很小，需用继电器（电磁开关）以小电流控制大电流，驱动大功率负载。",
+      "keywords": ["继电器", "大功率"]
+    },
+    {
+      "id": "m24",
+      "type": "judge",
+      "stem": "digitalWrite(13, HIGH) 会把 13 号引脚输出为高电平。",
+      "answer": true,
+      "analysis": "digitalWrite(引脚, HIGH/LOW) 用于数字输出，HIGH 为高电平（点亮 LED）。",
+      "keywords": ["digitalWrite"]
+    },
+    {
+      "id": "m25",
+      "type": "blank",
+      "stem": "在 Arduino 中，读取模拟传感器数值使用的函数是 ____。",
+      "answer": "analogRead",
+      "accept": ["analogRead", "analogRead()", "analogread"],
+      "analysis": "analogRead(引脚) 读取模拟量，返回 0~1023；analogWrite 是输出。",
+      "keywords": ["analogRead"]
+    }
+  ]
+}
