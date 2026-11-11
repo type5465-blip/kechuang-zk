@@ -223,3 +223,97 @@
 .back-link:hover { color: var(--primary); }
 
 .markdown h1:first-child, .markdown h2:first-child { margin-top: 0; }
+
+/* ===== 登录 / 注册页 ===== */
+.auth-wrap { max-width: 420px; margin: 0 auto; }
+.auth-hero { text-align: center; margin: 4px 0 24px; }
+.auth-logo {
+  width: 66px; height: 66px; margin: 0 auto 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; border-radius: 20px;
+  background: linear-gradient(135deg, #2563eb, #4f46e5); color: #fff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, .30);
+}
+.auth-hero h1 { font-size: 1.3rem; margin: 0 0 4px; }
+.auth-sub { color: var(--text-sub); font-size: .9rem; margin: 0; }
+
+.auth-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 18px; box-shadow: var(--shadow-lg); padding: 26px 24px 20px;
+}
+
+.auth-seg { display: flex; background: var(--bg); border-radius: 12px; padding: 4px; margin-bottom: 22px; }
+.auth-seg button {
+  flex: 1; border: none; background: transparent; padding: 9px 0;
+  border-radius: 9px; font-size: .95rem; font-weight: 600; color: var(--text-sub);
+  cursor: pointer; transition: background .15s, color .15s, box-shadow .15s;
+}
+.auth-seg button.active { background: #fff; color: var(--primary); box-shadow: var(--shadow); }
+
+.auth-field { margin-bottom: 16px; }
+.auth-label { display: block; font-size: .85rem; font-weight: 600; color: var(--text-sub); margin-bottom: 7px; }
+.auth-input {
+  width: 100%; padding: 12px 14px; font-size: 1rem;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: #fff;
+  transition: border-color .15s, box-shadow .15s;
+}
+.auth-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+
+.auth-pwd { position: relative; }
+.auth-pwd .auth-input { padding-right: 46px; }
+.auth-eye {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  border: none; background: none; cursor: pointer; font-size: 1.05rem;
+  padding: 8px; color: var(--text-sub); line-height: 1;
+}
+.auth-eye:hover { color: var(--primary); }
+
+.auth-code-row { display: flex; gap: 8px; }
+.auth-code-row .auth-input { flex: 1; }
+.auth-send {
+  flex-shrink: 0; padding: 0 14px; font-size: .88rem; font-weight: 600;
+  border: 1px solid var(--primary); color: var(--primary); background: #fff;
+  border-radius: var(--radius-sm); cursor: pointer; transition: background .15s; white-space: nowrap;
+}
+.auth-send:hover { background: var(--primary-soft); }
+.auth-send:disabled { color: var(--text-sub); border-color: var(--border); background: var(--bg); cursor: not-allowed; }
+
+.auth-submit {
+  width: 100%; padding: 12px 0; font-size: 1rem; font-weight: 700;
+  letter-spacing: 2px; text-indent: 2px;
+  border: none; border-radius: var(--radius-sm); cursor: pointer;
+  background: linear-gradient(135deg, #2563eb, #4f46e5); color: #fff;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, .25);
+  transition: transform .05s, box-shadow .15s; margin-top: 2px;
+}
+.auth-submit:hover { box-shadow: 0 8px 20px rgba(37, 99, 235, .34); }
+.auth-submit:active { transform: translateY(1px); }
+.auth-submit:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
+
+.auth-links { margin-top: 16px; font-size: .88rem; }
+.auth-links a { color: var(--primary); cursor: pointer; }
+.auth-links a:hover { text-decoration: underline; }
+.auth-alt { text-align: center; margin-top: 12px; font-size: .88rem; color: var(--text-sub); }
+.auth-alt a { color: var(--primary); font-weight: 600; cursor: pointer; }
+.auth-alt a:hover { text-decoration: underline; }
+.auth-msg { font-size: .86rem; margin: 14px 0 0; min-height: 1.3em; text-align: center; }
+.auth-hint { font-size: .8rem; color: var(--text-sub); margin: 6px 0 0; }
+.auth-trust { text-align: center; margin-top: 18px; color: var(--text-sub); font-size: .8rem; }
+
+/* ===== 课程目录（二级目录） ===== */
+.toc-card { padding: 16px 20px; }
+.toc-card h3 { margin: 0 0 12px; font-size: 1rem; }
+.toc-list {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 4px 18px;
+}
+.toc-list a {
+  display: block; padding: 5px 9px; border-radius: 7px;
+  color: var(--text-sub); cursor: pointer; font-size: .9rem;
+  transition: background .12s, color .12s;
+}
+.toc-list a:hover { background: var(--primary-soft); color: var(--primary); text-decoration: none; }
+.back-top { color: var(--text-sub); font-size: .86rem; cursor: pointer; }
+.back-top:hover { color: var(--primary); }
+.article h2, .article h3 { scroll-margin-top: 76px; }

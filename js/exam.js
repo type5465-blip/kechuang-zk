@@ -249,6 +249,7 @@
         <div class="card stat-card"><div class="stat-num">${correct} / ${total}</div><div class="stat-label">答对 / 总题数</div></div>
         <div class="card stat-card"><div class="stat-num">${App.fmtDuration(durationSec)}</div><div class="stat-label">用时</div></div>
       </div>
+      ${App.auth && App.auth.isLoggedIn() ? "" : `<p style="color:var(--text-sub);font-size:.9rem;margin-top:12px">💡 登录后才会保存成绩记录，<a href="#/login">去登录</a></p>`}
       <div class="card" style="margin-top:14px">
         <h3>错题回顾</h3>
         ${detail

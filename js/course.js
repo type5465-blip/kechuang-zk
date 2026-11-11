@@ -3,6 +3,18 @@
   const App = (window.App = window.App || {});
   App.course = {};
 
+  // 给渲染后的正文二级标题加锚点，生成目录 { html, items }
+  function tocify(html) {
+    const items = [];
+    let n = 0;
+    const out = html.replace(/<h2[^>]*>([\s\S]*?)<\/h2>/g, (_m, inner) => {
+      const id = "sec-" + (n++);
+      items.push({ id, text: inner.replace(/<[^>]*>/g, "").trim() });
+      return '<h2 id="' + id + '">' + inner + "</h2>";
+    });
+    return { html: out, items };
+  }
+
   // 模块卡片网格（首页与课程列表复用）
   App.course.renderGrid = function (container) {
     const mods = App.MANIFEST.modules;
@@ -30,7 +42,7 @@
   App.course.renderList = function (container) {
     container.innerHTML = `
       <h1>课程学习</h1>
-      <p class="text-sub" style="color:var(--text-sub)">按深圳科创自招硬件方向考点分为 5 大模块，每个模块学完后点「标记完成」。</p>
+      <p class="text-sub" style="color:var(--text-sub)">按深圳科创自招硬件方向考点分为 7 大模块，每个模块学完后点「标记完成」。</p>
     `;
     const wrap = document.createElement("div");
     container.appendChild(wrap);
@@ -47,7 +59,9 @@
       const md = await App.fetchText(m.course);
       // 去掉正文里重复的一级标题（标题已显示在头部卡片）
       const mdBody = md.replace(/^#\s+[^\n]*\n*/, "");
+      const { html: articleHtml, items: toc } = tocify(App.md(mdBody));
       const isDone = App.store.isCourseDone(moduleId);
+      const logged = App.auth && App.auth.isLoggedIn();
       container.innerHTML = `
         <a class="back-link" href="#/course">← 返回课程列表</a>
         <div class="card">
@@ -60,19 +74,43 @@
             ${isDone ? '<span class="tag green">✓ 已完成</span>' : ""}
           </div>
         </div>
+        ${toc.length ? `
+          <div class="card toc-card">
+            <h3>📖 本模块目录</h3>
+            <ul class="toc-list">
+              ${toc.map((it) => `<li><a data-sec="${it.id}">${App.esc(it.text)}</a></li>`).join("")}
+            </ul>
+          </div>` : ""}
         <div class="card article">
-          <div class="markdown">${App.md(mdBody)}</div>
+          <div class="markdown">${articleHtml}</div>
         </div>
         <div class="card" style="text-align:center">
-          <button class="btn ${isDone ? "secondary" : "success"}" id="doneBtn">
-            ${isDone ? "✓ 已完成（点击取消）" : "标记为已完成"}
-          </button>
+          ${logged ? `
+            <button class="btn ${isDone ? "secondary" : "success"}" id="doneBtn">
+              ${isDone ? "✓ 已完成（点击取消）" : "标记为已完成"}
+            </button>` : `
+            <p style="color:var(--text-sub);margin:0 0 8px">💡 登录后才会保存学习进度</p>
+            <a class="btn" href="#/login">登录后标记完成</a>`}
         </div>
+        <p style="text-align:center;margin-top:2px"><a class="back-top" id="backTop">↑ 回到顶部</a></p>
       `;
-      document.getElementById("doneBtn").addEventListener("click", () => {
-        App.store.setCourseDone(moduleId, !App.store.isCourseDone(moduleId));
-        App.renderRoute();
+
+      // 目录点击平滑跳转到对应小节
+      container.querySelectorAll("[data-sec]").forEach((el) => {
+        el.onclick = () => {
+          const t = document.getElementById(el.getAttribute("data-sec"));
+          if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+        };
       });
+      const backTop = document.getElementById("backTop");
+      if (backTop) backTop.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
+
+      if (logged) {
+        document.getElementById("doneBtn").addEventListener("click", () => {
+          App.store.setCourseDone(moduleId, !App.store.isCourseDone(moduleId));
+          App.renderRoute();
+        });
+      }
 
       // 学习时长计时
       App.stats.startTick(moduleId);

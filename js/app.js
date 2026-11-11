@@ -155,7 +155,7 @@
     if (st) {
       st.textContent = App.auth.isLoggedIn()
         ? "已登录 " + App.auth.phoneMask() + " · 进度自动云同步"
-        : "登录后可云同步进度与错题本";
+        : "登录后才会保存学习进度与错题本";
     }
   }
 

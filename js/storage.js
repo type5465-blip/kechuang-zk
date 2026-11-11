@@ -51,11 +51,17 @@
     }, 800);
   }
 
+  // 进度数据只在登录后写入本地（未登录不缓存）
+  function canWrite() {
+    return !!(App.auth && App.auth.isLoggedIn());
+  }
+
   App.store = {
     get() { return load(); },
 
     // 课程进度
     setCourseDone(moduleId, done) {
+      if (!canWrite()) return;
       const s = load();
       if (done) s.courseProgress[moduleId] = { completed: true, ts: Date.now() };
       else delete s.courseProgress[moduleId];
@@ -65,8 +71,9 @@
       return !!(load().courseProgress[moduleId] && load().courseProgress[moduleId].completed);
     },
 
-    // 做题记录 + 错题本
+    // 做题记录 + 错题本（仅登录后记录，未登录不缓存进度）
     recordAnswer(moduleId, qid, correct) {
+      if (!canWrite()) return;
       const s = load();
       s.quizHistory[moduleId] = s.quizHistory[moduleId] || {};
       s.quizHistory[moduleId][qid] = { correct, ts: Date.now() };
@@ -86,6 +93,7 @@
       return load().wrongBook[moduleId] || [];
     },
     removeWrong(moduleId, qid) {
+      if (!canWrite()) return;
       const s = load();
       const arr = s.wrongBook[moduleId] || [];
       const idx = arr.indexOf(qid);
@@ -95,6 +103,7 @@
 
     // 模拟考
     addExamRecord(rec) {
+      if (!canWrite()) return;
       const s = load();
       s.examRecords.push(rec);
       save();
@@ -105,6 +114,7 @@
 
     // 学习时长（按模块累加秒）
     addStudyTime(moduleId, seconds) {
+      if (!canWrite()) return;
       const s = load();
       s.studyTime[moduleId] = (s.studyTime[moduleId] || 0) + seconds;
       save();
@@ -126,6 +136,13 @@
     resetAll() {
       cache = JSON.parse(JSON.stringify(defaults));
       save();
+    },
+
+    // 退出登录时清空本地进度缓存（保留 settings，如 AI Key）
+    clearProgress() {
+      const keepSettings = load().settings;
+      cache = Object.assign({}, JSON.parse(JSON.stringify(defaults)), { settings: keepSettings });
+      try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch (e) { /* ignore */ }
     }
   };
 

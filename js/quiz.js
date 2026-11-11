@@ -6,7 +6,7 @@
   App.quiz.renderPicker = function (container) {
     container.innerHTML = `
       <h1>题库练习</h1>
-      <p style="color:var(--text-sub)">选择模块开始刷题，做错的题会自动进入错题本。</p>
+      <p style="color:var(--text-sub)">选择模块开始刷题，登录后做错的题会自动进入错题本。</p>
       <div style="margin-bottom:14px">
         <a class="btn secondary" href="#/quiz/wrong">📕 错题本</a>
       </div>
@@ -208,15 +208,16 @@
       };
 
       const showSummary = () => {
-        const wrongs = App.store.getWrongList(moduleId);
+        const logged = App.auth && App.auth.isLoggedIn();
         container.innerHTML =
           `<h1>练习完成 🎉</h1>
            <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
              <div class="card stat-card"><div class="stat-num">${answered}</div><div class="stat-label">作答题数</div></div>
              <div class="card stat-card"><div class="stat-num" style="color:var(--success)">${correctCount}</div><div class="stat-label">答对</div></div>
-             <div class="card stat-card"><div class="stat-num" style="color:var(--danger)">${answered - correctCount}</div><div class="stat-label">答错（已入错题本）</div></div>
+             <div class="card stat-card"><div class="stat-num" style="color:var(--danger)">${answered - correctCount}</div><div class="stat-label">${logged ? "答错（已入错题本）" : "答错"}</div></div>
              <div class="card stat-card"><div class="stat-num">${answered ? Math.round(correctCount / answered * 100) : 0}%</div><div class="stat-label">正确率</div></div>
            </div>
+           ${logged ? "" : `<p style="color:var(--text-sub);font-size:.9rem;margin-top:12px">💡 登录后错题才会保存到错题本，<a href="#/login">去登录</a></p>`}
            <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
              <a class="btn" href="#/quiz/${moduleId}">再来一轮</a>
              <a class="btn secondary" href="#/quiz/wrong">查看错题本</a>
@@ -232,6 +233,17 @@
   };
 
   App.quiz.renderWrongBook = async function (container) {
+    if (!App.auth || !App.auth.isLoggedIn()) {
+      container.innerHTML = `
+        <a class="back-link" href="#/quiz">← 返回题库</a>
+        <div class="card" style="text-align:center;padding:44px 20px">
+          <p style="font-size:2.4rem;margin:0 0 8px">🔒</p>
+          <h1>错题本需要登录</h1>
+          <p style="color:var(--text-sub)">登录后做错的题会自动保存到云端错题本，换设备也不丢。</p>
+          <a class="btn" href="#/login">立即登录</a>
+        </div>`;
+      return;
+    }
     const wrong = App.store.getWrongBook();
     // 收集所有错题 { moduleId, question }
     const mods = App.MANIFEST.modules;
