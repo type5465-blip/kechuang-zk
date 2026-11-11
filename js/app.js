@@ -154,7 +154,7 @@
     const st = document.getElementById("homeSync");
     if (st) {
       st.textContent = App.auth.isLoggedIn()
-        ? "已登录 " + App.auth.phoneMask() + " · 进度自动云同步"
+        ? "已登录 " + App.auth.phoneMask() + (App.auth.username() ? "（@" + App.auth.username() + "）" : "") + " · 进度自动云同步"
         : "登录后才会保存学习进度与错题本";
     }
   }

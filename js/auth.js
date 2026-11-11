@@ -15,9 +15,12 @@
   let current = null;   // { uid, phone }
   let otp = null;       // signInWithOtp / signUp 返回的 data（含 verifyOtp）
   let pendingPassword = null; // 注册时暂存密码
+  let pendingUsername = null; // 注册时暂存用户名
   let loginTab = "login"; // 登录页标签：login=登录 / reg=注册
   let loginWay = "pwd";   // 登录方式：pwd=密码 / sms=短信验证码
+  let loginId = "phone";  // 登录标识符：phone=手机号 / username=用户名
   let phoneDraft = "";    // 切换标签时保留已输入的手机号
+  let usernameDraft = ""; // 切换时保留已输入的用户名
 
   function configured() {
     return !!(window.cloudbase && ENV_ID);
@@ -57,7 +60,11 @@
     if (!u) return null;
     const id = u.id || u.uid || u.user_id || null;
     if (!id) return null;
-    return { uid: id, phone: u.phone || u.phone_number || u.phoneNumber || "" };
+    return {
+      uid: id,
+      phone: u.phone || u.phone_number || u.phoneNumber || "",
+      username: u.username || u.name || "",
+    };
   }
 
   App.auth = {
@@ -75,6 +82,7 @@
     isLoggedIn() { return !!current; },
     uid() { return current ? current.uid : null; },
     phone() { return current ? current.phone : ""; },
+    username() { return current ? current.username : ""; },
     async rdb() {
       ensure();
       if (!app) return null;
@@ -136,12 +144,34 @@
       return current;
     },
 
-    // 注册第一步：发送短信验证码（同时带上密码）
-    async sendSignupCode(phone, password) {
+    // 用户名 + 密码登录
+    async usernameLogin(username, password) {
+      ensure();
+      if (!auth) throw new Error("CloudBase 未配置");
+      let r;
+      if (typeof auth.signInWithPassword === "function") {
+        r = await auth.signInWithPassword({ username, password });
+      } else if (typeof auth.signIn === "function") {
+        r = await auth.signIn({ username, password });
+      } else {
+        throw new Error("当前 SDK 不支持用户名密码登录");
+      }
+      if (r && r.error) throw new Error(r.error.message || "用户名或密码错误");
+      const state = await getState().catch(() => null);
+      current = readUser(state) || { uid: null, username, phone: "" };
+      if (!current.uid) throw new Error("登录失败，请重试");
+      return current;
+    },
+
+    // 注册第一步：发送短信验证码（同时带上密码和用户名）
+    async sendSignupCode(phone, password, username) {
       ensure();
       if (!auth) throw new Error("CloudBase 未配置");
       pendingPassword = password;
-      const r = await auth.signUp({ phone: PHONE_PREFIX + phone, password });
+      pendingUsername = (username || "").trim();
+      const payload = { phone: PHONE_PREFIX + phone, password };
+      if (pendingUsername) payload.username = pendingUsername;
+      const r = await auth.signUp(payload);
       if (r && r.error) throw new Error(r.error.message || "验证码发送失败");
       otp = r.data;
       return true;
@@ -160,8 +190,29 @@
         // 注册完成后若未自动登录，用刚设置的密码兜底登录一次
         await this.passwordLogin(phone, pendingPassword);
       }
+      // 若 SDK 的 signUp 未在注册时绑定用户名，登录后补绑（v1 updateUsername）
+      if (pendingUsername && current && current.uid && current.username !== pendingUsername) {
+        await this.bindUsername(pendingUsername).catch((e) => {
+          console.warn("用户名绑定失败", e);
+        });
+        const st = await getState().catch(() => null);
+        current = readUser(st) || current;
+      }
       if (!current.uid) throw new Error("注册失败，请重试");
       return current;
+    },
+
+    // 绑定用户名（注册时未绑定时兜底；v1 接口 currentUser.updateUsername）
+    async bindUsername(username) {
+      ensure();
+      if (!auth) return false;
+      const cu = auth.currentUser
+        || (typeof auth.getCurrentUser === "function" ? auth.getCurrentUser() : null);
+      if (cu && typeof cu.updateUsername === "function") {
+        await cu.updateUsername(username);
+        return true;
+      }
+      return false;
     },
 
     async logout() {
@@ -178,6 +229,7 @@
       const logged = current;
       const isLogin = loginTab === "login";
       const isPwd = loginWay === "pwd";
+      const isUser = isLogin && loginId === "username";
 
       container.innerHTML = `
         <div class="auth-wrap">
@@ -193,7 +245,7 @@
             <div class="auth-card" style="text-align:center">
               <p style="font-size:2.4rem;margin:0">✅</p>
               <p style="font-weight:700;font-size:1.05rem;margin:10px 0 2px">已登录</p>
-              <p style="color:var(--text-sub);font-size:.95rem;margin:0 0 20px">${App.esc(App.auth.phoneMask() || App.auth.phone())}</p>
+              <p style="color:var(--text-sub);font-size:.95rem;margin:0 0 20px">${App.esc(App.auth.phoneMask() || App.auth.phone())}${App.auth.username() ? " · @" + App.esc(App.auth.username()) : ""}</p>
               <button class="auth-submit" id="loginHome" type="button">进入学习</button>
               <button class="btn ghost block" id="loginOut" type="button" style="margin-top:10px">退出登录</button>
             </div>` : `
@@ -203,12 +255,48 @@
                 <button id="segReg" class="${!isLogin ? "active" : ""}" type="button">注册</button>
               </div>
 
-              <div class="auth-field">
-                <label class="auth-label" for="loginPhone">手机号</label>
-                <input class="auth-input" id="loginPhone" inputmode="numeric" maxlength="11" placeholder="请输入 11 位手机号" value="${App.esc(phoneDraft)}">
-              </div>
-
-              ${isLogin ? (isPwd ? `
+              ${!isLogin ? `
+                <div class="auth-field">
+                  <label class="auth-label" for="loginPhone">手机号</label>
+                  <input class="auth-input" id="loginPhone" inputmode="numeric" maxlength="11" placeholder="请输入 11 位手机号" value="${App.esc(phoneDraft)}">
+                </div>
+                <div class="auth-field">
+                  <label class="auth-label" for="loginUser">用户名（登录用，必填）</label>
+                  <input class="auth-input" id="loginUser" autocomplete="username" autocapitalize="none" maxlength="25" placeholder="6–25 位，小写字母开头，可含数字/下划线/连字符" value="${App.esc(usernameDraft)}">
+                </div>
+                <div class="auth-field">
+                  <label class="auth-label" for="loginPwd">设置密码</label>
+                  <div class="auth-pwd">
+                    <input class="auth-input" id="loginPwd" type="password" placeholder="6–20 位，建议字母 + 数字">
+                    <button class="auth-eye" id="eyePwd" type="button" aria-label="显示或隐藏密码">👁</button>
+                  </div>
+                  <p class="auth-hint">注册后可用「用户名 + 密码」或「手机号 + 密码」登录</p>
+                </div>
+                <div class="auth-field">
+                  <label class="auth-label" for="loginCode">短信验证码</label>
+                  <div class="auth-code-row">
+                    <input class="auth-input" id="loginCode" inputmode="numeric" maxlength="6" placeholder="6 位验证码">
+                    <button class="auth-send" id="loginSend" type="button">获取验证码</button>
+                  </div>
+                </div>` : isUser ? `
+                <div class="auth-field">
+                  <label class="auth-label" for="loginUser">用户名</label>
+                  <input class="auth-input" id="loginUser" autocomplete="username" autocapitalize="none" maxlength="25" placeholder="请输入用户名" value="${App.esc(usernameDraft)}">
+                </div>
+                <div class="auth-field">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+                    <label class="auth-label" for="loginPwd" style="margin:0">密码</label>
+                    <a id="forgotPwd" style="font-size:.82rem;color:var(--text-sub);cursor:pointer">忘记密码？</a>
+                  </div>
+                  <div class="auth-pwd">
+                    <input class="auth-input" id="loginPwd" type="password" placeholder="请输入密码">
+                    <button class="auth-eye" id="eyePwd" type="button" aria-label="显示或隐藏密码">👁</button>
+                  </div>
+                </div>` : isPwd ? `
+                <div class="auth-field">
+                  <label class="auth-label" for="loginPhone">手机号</label>
+                  <input class="auth-input" id="loginPhone" inputmode="numeric" maxlength="11" placeholder="请输入 11 位手机号" value="${App.esc(phoneDraft)}">
+                </div>
                 <div class="auth-field">
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
                     <label class="auth-label" for="loginPwd" style="margin:0">密码</label>
@@ -220,20 +308,8 @@
                   </div>
                 </div>` : `
                 <div class="auth-field">
-                  <label class="auth-label" for="loginCode">短信验证码</label>
-                  <div class="auth-code-row">
-                    <input class="auth-input" id="loginCode" inputmode="numeric" maxlength="6" placeholder="6 位验证码">
-                    <button class="auth-send" id="loginSend" type="button">获取验证码</button>
-                  </div>
-                  <p class="auth-hint">忘记密码也没关系，短信验证码同样能登录</p>
-                </div>`) : `
-                <div class="auth-field">
-                  <label class="auth-label" for="loginPwd">设置密码</label>
-                  <div class="auth-pwd">
-                    <input class="auth-input" id="loginPwd" type="password" placeholder="6–20 位，建议字母 + 数字">
-                    <button class="auth-eye" id="eyePwd" type="button" aria-label="显示或隐藏密码">👁</button>
-                  </div>
-                  <p class="auth-hint">注册后每次用密码直接登录，不再收短信</p>
+                  <label class="auth-label" for="loginPhone">手机号</label>
+                  <input class="auth-input" id="loginPhone" inputmode="numeric" maxlength="11" placeholder="请输入 11 位手机号" value="${App.esc(phoneDraft)}">
                 </div>
                 <div class="auth-field">
                   <label class="auth-label" for="loginCode">短信验证码</label>
@@ -241,12 +317,16 @@
                     <input class="auth-input" id="loginCode" inputmode="numeric" maxlength="6" placeholder="6 位验证码">
                     <button class="auth-send" id="loginSend" type="button">获取验证码</button>
                   </div>
+                  <p class="auth-hint">忘记密码也没关系，短信验证码同样能登录</p>
                 </div>`}
 
               <button class="auth-submit" id="loginBtn" type="button">${isLogin ? "登录" : "注册"}</button>
 
               ${isLogin ? `
-                <div class="auth-links"><a id="linkWay">${isPwd ? "短信验证码登录" : "密码登录"}</a></div>
+                <div class="auth-links">
+                  <a id="linkId">${isUser ? "用手机号登录" : "用用户名登录"}</a>
+                  ${!isUser ? ` · <a id="linkWay">${isPwd ? "短信验证码登录" : "密码登录"}</a>` : ""}
+                </div>
                 <div class="auth-alt">还没有账号？<a id="goReg">立即注册</a></div>` : `
                 <div class="auth-alt">已有账号？<a id="goLogin">直接登录</a></div>`}
 
@@ -274,8 +354,13 @@
       if ($("segReg")) $("segReg").onclick = () => { loginTab = "reg"; loginWay = "pwd"; App.auth.renderLogin(container); };
       if ($("goReg")) $("goReg").onclick = () => { loginTab = "reg"; loginWay = "pwd"; App.auth.renderLogin(container); };
       if ($("goLogin")) $("goLogin").onclick = () => { loginTab = "login"; App.auth.renderLogin(container); };
+      if ($("linkId")) $("linkId").onclick = () => {
+        loginId = loginId === "phone" ? "username" : "phone";
+        if (loginId === "username") loginWay = "pwd";
+        App.auth.renderLogin(container);
+      };
       if ($("linkWay")) $("linkWay").onclick = () => { loginWay = loginWay === "pwd" ? "sms" : "pwd"; App.auth.renderLogin(container); };
-      if ($("forgotPwd")) $("forgotPwd").onclick = () => { loginWay = "sms"; App.auth.renderLogin(container); };
+      if ($("forgotPwd")) $("forgotPwd").onclick = () => { loginId = "phone"; loginWay = "sms"; App.auth.renderLogin(container); };
 
       // 密码可见性切换
       const pwdEl = $("loginPwd");
@@ -286,13 +371,16 @@
       };
 
       const phoneEl = $("loginPhone");
+      const userEl = $("loginUser");
       const codeEl = $("loginCode");
       const sendBtn = $("loginSend");
       const btn = $("loginBtn");
 
       if (phoneEl) phoneEl.oninput = () => { phoneDraft = phoneEl.value; };
+      if (userEl) userEl.oninput = () => { userEl.value = userEl.value.toLowerCase(); usernameDraft = userEl.value; };
 
       const phoneOk = () => /^1\d{10}$/.test((phoneEl.value || "").trim());
+      const userOk = (v) => /^[a-z][0-9a-z_-]{5,24}$/.test((v || "").trim());
 
       const countdown = (b) => {
         let left = 60;
@@ -308,9 +396,10 @@
         const phone = (phoneEl.value || "").trim();
         if (!phoneOk()) { msg("请输入正确的 11 位手机号", true); return; }
         if (!isLogin && (pwdEl.value || "").trim().length < 6) { msg("请先设置至少 6 位密码", true); return; }
+        if (!isLogin && !userOk(userEl.value)) { msg("用户名需 6–25 位，以小写字母开头，仅含小写字母/数字/下划线/连字符", true); return; }
         sendBtn.disabled = true;
         try {
-          if (!isLogin) await App.auth.sendSignupCode(phone, (pwdEl.value || "").trim());
+          if (!isLogin) await App.auth.sendSignupCode(phone, (pwdEl.value || "").trim(), (userEl.value || "").trim());
           else await App.auth.sendCode(phone);
           msg("验证码已发送，请查收短信");
           countdown(sendBtn);
@@ -321,24 +410,36 @@
       };
 
       if (btn) btn.onclick = async () => {
-        const phone = (phoneEl.value || "").trim();
-        if (!phoneOk()) { msg("请输入正确的 11 位手机号", true); return; }
         btn.disabled = true; btn.textContent = "请稍候…";
         try {
-          if (isLogin && isPwd) {
-            const pw = (pwdEl.value || "");
-            if (!pw) throw new Error("请输入密码");
-            await App.auth.passwordLogin(phone, pw);
-          } else if (isLogin && !isPwd) {
-            const code = (codeEl.value || "").trim();
-            if (!/^\d{4,6}$/.test(code)) throw new Error("请输入验证码");
-            await App.auth.login(phone, code);
-          } else {
+          if (!isLogin) {
+            const phone = (phoneEl.value || "").trim();
+            const uname = (userEl.value || "").trim();
+            if (!phoneOk()) throw new Error("请输入正确的 11 位手机号");
+            if (!userOk(uname)) throw new Error("用户名需 6–25 位，以小写字母开头，仅含小写字母/数字/下划线/连字符");
             const pw = (pwdEl.value || "");
             if (pw.length < 6) throw new Error("请设置至少 6 位密码");
             const code = (codeEl.value || "").trim();
             if (!/^\d{4,6}$/.test(code)) throw new Error("请输入验证码");
             await App.auth.signup(phone, code);
+          } else if (isUser) {
+            const uname = (userEl.value || "").trim();
+            if (!uname) throw new Error("请输入用户名");
+            const pw = (pwdEl.value || "");
+            if (!pw) throw new Error("请输入密码");
+            await App.auth.usernameLogin(uname, pw);
+          } else if (isPwd) {
+            const phone = (phoneEl.value || "").trim();
+            if (!phoneOk()) throw new Error("请输入正确的 11 位手机号");
+            const pw = (pwdEl.value || "");
+            if (!pw) throw new Error("请输入密码");
+            await App.auth.passwordLogin(phone, pw);
+          } else {
+            const phone = (phoneEl.value || "").trim();
+            if (!phoneOk()) throw new Error("请输入正确的 11 位手机号");
+            const code = (codeEl.value || "").trim();
+            if (!/^\d{4,6}$/.test(code)) throw new Error("请输入验证码");
+            await App.auth.login(phone, code);
           }
           msg(isLogin ? "登录成功，正在同步…" : "注册成功，正在同步…");
           await App.sync.pullCloud();
