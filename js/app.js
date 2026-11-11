@@ -33,6 +33,7 @@
           <span class="label">录取规则</span>
           <span class="formula">中考成绩 × 60% + 专项考核 × 40%</span>
         </div>
+        <p id="homeSync" style="margin-top:12px;font-size:.85rem;color:var(--text-sub)"></p>
       </div>
 
       <div class="stat-grid">
@@ -42,11 +43,12 @@
         <div class="card stat-card"><div class="stat-num">${App.fmtDuration(time)}</div><div class="stat-label">学习时长</div></div>
       </div>
 
-      <div class="section-title"><h2>五大知识模块</h2><a href="#/course">全部 →</a></div>
+      <div class="section-title"><h2>七大知识模块</h2><a href="#/course">全部 →</a></div>
     `;
     const grid = document.createElement("div");
     container.appendChild(grid);
     App.course.renderGrid(grid);
+    updateAccountUI();
   }
 
   // 设置页
@@ -120,6 +122,7 @@
   App.route(/^\/stats$/, () => App.stats.render(document.getElementById("app")));
   App.route(/^\/chat$/, () => App.chat.render(document.getElementById("app")));
   App.route(/^\/settings$/, () => renderSettings(document.getElementById("app")));
+  App.route(/^\/login$/, () => App.auth.renderLogin(document.getElementById("app")));
 
   // 初始化导航
   function initNav() {
@@ -137,12 +140,27 @@
     const nav = document.getElementById("nav");
     nav.innerHTML = navItems
       .map(([h, t]) => `<a href="${h}">${t}</a>`)
-      .join("");
+      .join("") + `<a href="#/login" id="navAccount">登录</a>`;
     document.getElementById("navToggle").addEventListener("click", () => {
       nav.classList.toggle("open");
     });
+    updateAccountUI();
+  }
+
+  // 刷新登录状态显示（导航账号入口 + 首页提示）
+  function updateAccountUI() {
+    const el = document.getElementById("navAccount");
+    if (el) el.textContent = App.auth.isLoggedIn() ? "账号" : "登录";
+    const st = document.getElementById("homeSync");
+    if (st) {
+      st.textContent = App.auth.isLoggedIn()
+        ? "已登录 " + App.auth.phoneMask() + " · 进度自动云同步"
+        : "登录后可云同步进度与错题本";
+    }
   }
 
   initNav();
   App.renderRoute();
+  // 恢复登录会话并刷新账号状态
+  App.auth.init().then(() => updateAccountUI()).catch(() => {});
 })();

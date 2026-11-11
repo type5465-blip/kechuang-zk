@@ -38,6 +38,17 @@
     } catch (e) {
       console.warn("localStorage 写入失败", e);
     }
+    scheduleCloudPush();
+  }
+
+  // 已登录时，防抖把最新进度推送到云端
+  let pushTimer = null;
+  function scheduleCloudPush() {
+    if (!App.auth || !App.auth.uid()) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(() => {
+      App.sync.pushCloud().catch((e) => console.warn("云端同步失败", e));
+    }, 800);
   }
 
   App.store = {
@@ -115,6 +126,65 @@
     resetAll() {
       cache = JSON.parse(JSON.stringify(defaults));
       save();
+    }
+  };
+
+  // 云端同步：与 CloudBase 云数据库双向同步（进度字段，不含 settings）
+  // 归一化 RDB 查询返回：兼容 {data:[...]} / 直接数组 / 单行对象 / {data:{...}}
+  function rowsOf(res) {
+    if (!res) return [];
+    if (res.error) throw new Error(res.error.message || "查询失败");
+    let d = res.data;
+    if (Array.isArray(res)) d = res;
+    if (d == null) return [];
+    if (!Array.isArray(d)) d = [d];
+    return d;
+  }
+
+  App.sync = {
+    async pullCloud() {
+      if (!App.auth || !App.auth.uid()) return null;
+      const db = await App.auth.rdb();
+      if (!db) return null;
+      const uid = App.auth.uid();
+      try {
+        const rows = rowsOf(await db.from("progress").select("*").eq("uid", uid));
+        const row = rows[0] || null;
+        const s = load();
+        const keepSettings = s.settings;
+        if (row && row.data) {
+          cache = Object.assign({}, defaults, row.data, { settings: keepSettings });
+        }
+        localStorage.setItem(KEY, JSON.stringify(cache));
+        if (!row) await this.pushCloud(); // 云端无记录，用本地初始化一条
+        return !!row;
+      } catch (e) {
+        console.warn("云端拉取失败", e);
+        return null;
+      }
+    },
+    async pushCloud() {
+      if (!App.auth || !App.auth.uid()) return null;
+      const db = await App.auth.rdb();
+      if (!db) return null;
+      const uid = App.auth.uid();
+      const s = load();
+      try {
+        return await db.from("progress").upsert({
+          uid: uid,
+          phone: App.auth.phone() || "",
+          data: {
+            courseProgress: s.courseProgress,
+            quizHistory: s.quizHistory,
+            wrongBook: s.wrongBook,
+            examRecords: s.examRecords,
+            studyTime: s.studyTime
+          }
+        }, { onConflict: "uid" });
+      } catch (e) {
+        console.warn("云端同步失败", e);
+        return null;
+      }
     }
   };
 })();
