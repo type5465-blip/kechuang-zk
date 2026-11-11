@@ -101,6 +101,29 @@
     });
   }
 
+  // 首次欢迎页（注册引导）
+  function renderWelcome(container) {
+    container.innerHTML = `
+      <div class="auth-wrap">
+        <div class="auth-hero" style="margin-top:8px">
+          <div class="auth-logo">🔧</div>
+          <h1>深圳科创自招 · 硬件备考</h1>
+          <p class="auth-sub">系统备考电路 / 传感器 / 单片机 / 机器人 / 数理基础，覆盖笔试、实操与面试</p>
+        </div>
+        <div class="auth-card" style="text-align:center">
+          <p style="font-size:1.05rem;font-weight:600;margin:0 0 8px">欢迎使用！</p>
+          <p style="color:var(--text-sub);font-size:.95rem;margin:0 0 20px">注册账号后，学习进度与错题本会自动同步，换设备也不丢。</p>
+          <button class="auth-submit" id="wReg" type="button">立即注册</button>
+          <button class="btn secondary block" id="wLogin" type="button" style="margin-top:10px">已有账号，去登录</button>
+          <a class="back-top" id="wGuest" style="display:inline-block;margin-top:16px">先逛逛，暂不注册 →</a>
+        </div>
+      </div>
+    `;
+    document.getElementById("wReg").onclick = () => App.auth.gotoLogin("reg");
+    document.getElementById("wLogin").onclick = () => App.auth.gotoLogin("login");
+    document.getElementById("wGuest").onclick = () => { App.store.markWelcomed(); location.hash = "#/"; };
+  }
+
   // 注册路由
   App.route(/^\/$/, (m) => renderHome(document.getElementById("app")));
 
@@ -123,6 +146,7 @@
   App.route(/^\/chat$/, () => App.chat.render(document.getElementById("app")));
   App.route(/^\/settings$/, () => renderSettings(document.getElementById("app")));
   App.route(/^\/login$/, () => App.auth.renderLogin(document.getElementById("app")));
+  App.route(/^\/welcome$/, () => renderWelcome(document.getElementById("app")));
 
   // 初始化导航
   function initNav() {
@@ -140,7 +164,7 @@
     const nav = document.getElementById("nav");
     nav.innerHTML = navItems
       .map(([h, t]) => `<a href="${h}">${t}</a>`)
-      .join("") + `<a href="#/login" id="navAccount">登录</a>`;
+      .join("") + `<a href="#/login" id="navAccount">注册 / 登录</a>`;
     document.getElementById("navToggle").addEventListener("click", () => {
       nav.classList.toggle("open");
     });
@@ -150,7 +174,18 @@
   // 刷新登录状态显示（导航账号入口 + 首页提示）
   function updateAccountUI() {
     const el = document.getElementById("navAccount");
-    if (el) el.textContent = App.auth.isLoggedIn() ? "账号" : "登录";
+    if (el) {
+      if (App.auth.isLoggedIn()) {
+        const a = App.store.getAvatar();
+        el.innerHTML = a
+          ? '<img class="avatar avatar-sm" src="' + a + '" alt="账号">'
+          : '<span class="avatar avatar-default avatar-sm">' + App.esc((App.auth.username() || App.auth.phone() || "?").slice(0, 1).toUpperCase()) + "</span>";
+        el.title = "账号";
+      } else {
+        el.textContent = "注册 / 登录";
+        el.title = "";
+      }
+    }
     const st = document.getElementById("homeSync");
     if (st) {
       st.textContent = App.auth.isLoggedIn()
@@ -158,9 +193,18 @@
         : "登录后才会保存学习进度与错题本";
     }
   }
+  App.updateAccountUI = updateAccountUI;
 
   initNav();
-  App.renderRoute();
-  // 恢复登录会话并刷新账号状态
-  App.auth.init().then(() => updateAccountUI()).catch(() => {});
+  // 恢复登录会话后决定入口：首次未登录 → 欢迎页；否则正常渲染
+  App.auth.init().then(() => {
+    updateAccountUI();
+    if (!App.auth.isLoggedIn() && !App.store.isWelcomed()) {
+      location.hash = "#/welcome";
+    } else {
+      App.renderRoute();
+    }
+  }).catch(() => {
+    App.renderRoute();
+  });
 })();

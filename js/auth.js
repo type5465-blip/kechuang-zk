@@ -16,7 +16,7 @@
   let otp = null;       // signInWithOtp / signUp 返回的 data（含 verifyOtp）
   let pendingPassword = null; // 注册时暂存密码
   let pendingUsername = null; // 注册时暂存用户名
-  let loginTab = "login"; // 登录页标签：login=登录 / reg=注册
+  let loginTab = "reg";   // 登录页标签：login=登录 / reg=注册（默认注册优先）
   let loginWay = "pwd";   // 登录方式：pwd=密码 / sms=短信验证码
   let loginId = "phone";  // 登录标识符：phone=手机号 / username=用户名
   let phoneDraft = "";    // 切换标签时保留已输入的手机号
@@ -67,6 +67,38 @@
     };
   }
 
+  // 头像压缩：把图片文件转成 256×256 JPEG base64（居中裁剪正方形）
+  function readAndResizeAvatar(file, cb) {
+    if (!file || !/^image\//.test(file.type)) { cb(null); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const S = 256;
+        const c = document.createElement("canvas");
+        c.width = c.height = S;
+        const ctx = c.getContext("2d");
+        const min = Math.min(img.width, img.height);
+        const sx = (img.width - min) / 2;
+        const sy = (img.height - min) / 2;
+        ctx.drawImage(img, sx, sy, min, min, 0, 0, S, S);
+        try { cb(c.toDataURL("image/jpeg", 0.85)); } catch (e) { cb(null); }
+      };
+      img.onerror = () => cb(null);
+      img.src = reader.result;
+    };
+    reader.onerror = () => cb(null);
+    reader.readAsDataURL(file);
+  }
+
+  // 头像 HTML：有头像用图片，否则默认首字母圆片
+  function avatarHtml(cls) {
+    const a = App.store.getAvatar();
+    if (a) return '<img class="avatar ' + (cls || "") + '" src="' + a + '" alt="头像">';
+    const ch = (App.auth.username() || App.auth.phone() || "?").slice(0, 1).toUpperCase();
+    return '<span class="avatar avatar-default ' + (cls || "") + '">' + App.esc(ch) + "</span>";
+  }
+
   App.auth = {
     configured,
 
@@ -100,6 +132,14 @@
     phoneMask() {
       const p = (current && current.phone) || "";
       return p.replace(/^(\d{3})\d{4}(\d{4})$/, "$1****$2");
+    },
+
+    // 跳转到登录/注册页（tab: "reg" | "login"）
+    gotoLogin(tab) {
+      loginTab = tab === "login" ? "login" : "reg";
+      loginWay = "pwd";
+      loginId = "phone";
+      location.hash = "#/login";
     },
 
     // 发送验证码（v2 OTP 一步登录，自动注册新用户）
@@ -243,9 +283,11 @@
               <p style="color:var(--danger);text-align:center;margin:0">CloudBase 尚未配置。请在 js/auth.js 顶部填写 ENV_ID（环境 ID）后刷新。</p>
             </div>` : logged ? `
             <div class="auth-card" style="text-align:center">
-              <p style="font-size:2.4rem;margin:0">✅</p>
-              <p style="font-weight:700;font-size:1.05rem;margin:10px 0 2px">已登录</p>
-              <p style="color:var(--text-sub);font-size:.95rem;margin:0 0 20px">${App.esc(App.auth.phoneMask() || App.auth.phone())}${App.auth.username() ? " · @" + App.esc(App.auth.username()) : ""}</p>
+              <div style="display:flex;justify-content:center;margin-bottom:12px">${avatarHtml("avatar-lg")}</div>
+              <p style="font-weight:700;font-size:1.05rem;margin:0 0 2px">已登录</p>
+              <p style="color:var(--text-sub);font-size:.95rem;margin:0 0 16px">${App.esc(App.auth.phoneMask() || App.auth.phone())}${App.auth.username() ? " · @" + App.esc(App.auth.username()) : ""}</p>
+              <input type="file" id="avatarFile" accept="image/*" style="display:none">
+              <button class="btn secondary" id="avatarBtn" type="button" style="margin-bottom:12px">${App.store.getAvatar() ? "更换头像" : "上传头像"}</button>
               <button class="auth-submit" id="loginHome" type="button">进入学习</button>
               <button class="btn ghost block" id="loginOut" type="button" style="margin-top:10px">退出登录</button>
             </div>` : `
@@ -344,6 +386,17 @@
       if (logged) {
         document.getElementById("loginHome").onclick = () => { location.hash = "#/"; };
         document.getElementById("loginOut").onclick = async () => { await App.auth.logout(); App.renderRoute(); };
+        document.getElementById("avatarBtn").onclick = () => document.getElementById("avatarFile").click();
+        document.getElementById("avatarFile").onchange = (e) => {
+          const f = e.target.files && e.target.files[0];
+          if (!f) return;
+          readAndResizeAvatar(f, (dataUrl) => {
+            if (!dataUrl) { alert("头像读取失败，请换一张图片"); return; }
+            App.store.setAvatar(dataUrl);
+            App.renderRoute();
+            if (App.updateAccountUI) App.updateAccountUI();
+          });
+        };
         return;
       }
 

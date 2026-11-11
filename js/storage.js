@@ -9,6 +9,7 @@
     wrongBook: {},          // { moduleId: [qid, ...] }
     examRecords: [],        // [{ id, date, scope, score, total, correct, durationSec, detail:[{qid,moduleId,correct,userAnswer,answer}] }]
     studyTime: {},          // { [moduleId]: seconds }
+    avatar: "",             // 头像 base64（登录后云端同步）
     settings: {             // AI 配置（仅存本地，不硬编码）
       aiEnabled: false,
       apiBase: "https://api.deepseek.com",
@@ -123,6 +124,17 @@
       return Object.assign({}, load().studyTime);
     },
 
+    // 头像（base64，登录后云端同步）
+    getAvatar() {
+      return load().avatar || "";
+    },
+    setAvatar(base64) {
+      if (!canWrite()) return;
+      const s = load();
+      s.avatar = base64 || "";
+      save();
+    },
+
     // 设置
     getSettings() {
       return Object.assign({}, load().settings);
@@ -136,6 +148,14 @@
     resetAll() {
       cache = JSON.parse(JSON.stringify(defaults));
       save();
+    },
+
+    // 首次欢迎页标记（纯本机浏览器状态，登出/清数据不重置，不同步云端）
+    isWelcomed() {
+      return localStorage.getItem("hwkz.welcomed") === "1";
+    },
+    markWelcomed() {
+      try { localStorage.setItem("hwkz.welcomed", "1"); } catch (e) { /* ignore */ }
     },
 
     // 退出登录时清空本地进度缓存（保留 settings，如 AI Key）
@@ -195,7 +215,8 @@
             quizHistory: s.quizHistory,
             wrongBook: s.wrongBook,
             examRecords: s.examRecords,
-            studyTime: s.studyTime
+            studyTime: s.studyTime,
+            avatar: s.avatar
           }
         }, { onConflict: "uid" });
       } catch (e) {

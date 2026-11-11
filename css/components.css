@@ -317,3 +317,24 @@
 .back-top { color: var(--text-sub); font-size: .86rem; cursor: pointer; }
 .back-top:hover { color: var(--primary); }
 .article h2, .article h3 { scroll-margin-top: 76px; }
+
+/* ===== 头像 ===== */
+.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+  vertical-align: middle;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.avatar-default {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  border: none;
+}
+.avatar-lg { width: 76px; height: 76px; font-size: 1.8rem; }
+.avatar-sm { width: 28px; height: 28px; font-size: .9rem; }
